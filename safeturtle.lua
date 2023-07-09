@@ -1,7 +1,7 @@
 -- Library for safe turtle movement/manipulation
 
-loadAPI('blocks.lua')
-loadAPI('geo.lua')
+os.loadAPI('blocks.lua')
+os.loadAPI('geo.lua')
 
 currentPos = geo.loadPos()
 currentDir = geo.loadDir()
@@ -22,19 +22,20 @@ function dig()
   -- Look at what's ahead.
   ok, info = turtle.inspect()
   if not ok then
-    return false
+    return false, 'no block'
   end
 
   -- Safety: don't dig certain rare blocks
   if blocks.isDoNotMine(info) then
-    return false
+    return false, 'refuse to mine ' .. info.name
   end
 
   -- Check for blocks with gravity and dig repeatedly
   if blocks.hasGravity(info) then
     -- Dig until the gravel is cleared
-    if not turtle.dig() then
-      return false
+    ok, reason = turtle.dig()
+    if not ok then
+      return false, reason
     end
     os.sleep(1)
     return dig()
@@ -61,19 +62,22 @@ function turnTo(dir)
 end
 
 function turnLeft()
-  if not turtle.turnLeft() then return false end
+  ok, reason = turtle.turnLeft()
+  if not ok then return false, reason end
   _setDir(currentDir.left)
   return true
 end
 
 function turnRight()
-  if not turtle.turnRight() then return false end
+  ok, reason = turtle.turnRight()
+  if not ok then return false, reason end
   _setDir(currentDir.right)
   return true
 end
 
 function turnAbout()
-  if not turnLeft() then return false end
+  ok, reason = turnLeft()
+  if not ok then return false, reason end
   return turnLeft()
 end
 
@@ -85,30 +89,35 @@ function moveDir(dir)
   elseif dir == currentDir.back then
     return back()
   end
-  if not turnTo(dir) then return false end
+  ok, reason = turnTo(dir)
+  if not ok then return false, reason end
   return forward()
 end
 
 function up()
-  if not turtle.up() then return false end
+  ok, reason = turtle.up()
+  if not ok then return false, reason end
   _setPos(currentPos + up.delta)
   return true
 end
 
 function down()
-  if not turtle.down() then return false end
+  ok, reason = turtle.down()
+  if not ok then return false, reason end
   _setPos(currentPos + down.delta)
   return true
 end
 
 function forward()
-  if not turtle.forward() then return false end
+  ok, reason = turtle.forward()
+  if not ok then return false, reason end
   _setPos(currentPos + currentDir.delta)
   return true
 end
 
 function back()
-  if not turtle.back() then return false end
+  ok, reason = turtle.back()
+  if not ok then return false, reason end
   _setPos(currentPos - currentDir.delta)
   return true
 end
