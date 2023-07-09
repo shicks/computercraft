@@ -1,7 +1,7 @@
 -- Prints files
 -- Usage: cat [file...]
 
-for fn in {...} do
+for _, fn in pairs({...}) do
   f = fs.open(fn, 'r')
   if f ~= nil then
     print(f.readAll())
