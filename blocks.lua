@@ -8,7 +8,7 @@ function hasGravity(info)
   return name == 'sand' or name == 'gravel'
 end
 
-valuableRe = table.concat({
+valuablePats = {
   'ore',
   'diamond',
   'redstone',
@@ -23,7 +23,14 @@ valuableRe = table.concat({
   'debris',
   'sponge',
   'obsidian',
-}, '|')
+}
+
+local function findAny(s, t)
+  for _, p in pairs(t) do
+    if s:find(p) then return true end
+  end
+  return false
+end
 
 function isValuable(info)
   if info == nil then
@@ -31,10 +38,10 @@ function isValuable(info)
   end
   local name = info['name']:gsub('^[^:]*:', '')
   -- note: don't mine redstone components, only ore
-  if name:find(valuableRe) then
+  if findAny(name, valuablePats) then
     return true
   end
-  if name:find('stone|deepslate') then
+  if findAny(name, {'stone', 'deepslate'}) then
     return false
   end
 
@@ -44,7 +51,7 @@ function isValuable(info)
   return false
 end
 
-doNotMineRe = table.concat({
+doNotMinePats = {
   'glass',
   'spawner',
   'budding_amethyst',
@@ -59,7 +66,7 @@ doNotMineRe = table.concat({
   'repeater',
   'rail',
   -- should probably avoid work blocks, too...?
-}, '|')
+}
 
 -- TODO - probably stick to just "digIfExpected(?)"
 --      - where we expect natural ores...?
@@ -70,5 +77,5 @@ function isDoNotMine(info)
     return false
   end
   local name = info['name']:gsub('^[^:]*:', '')
-  return name:find(doNotMineRe)
+  return findAny(name, doNotMinePats)
 end
