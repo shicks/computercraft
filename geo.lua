@@ -1,6 +1,9 @@
+local exports = {}
+
 -- Coordinate class.
 
-P = {mt = {}, prototype = {}}
+local P = {mt = {}, prototype = {}}
+exports.P = P
 
 setmetatable(P, {
   __call = function(_, x, y, z)
@@ -53,7 +56,9 @@ end
 
 -- Direction.
 
-Dir = {mt = {}}
+local Dir = {mt = {}}
+exports.Dir = Dir
+
 setmetatable(Dir, {
   __call = function(_, name)
    if name == 'E' then return east end
@@ -75,12 +80,19 @@ function Dir._new(name)
   return setmetatable({_t = {name = name}}, Dir.mt)
 end
 
-east = Dir._new('E')
-west = Dir._new('W')
-north = Dir._new('N')
-south = Dir._new('S')
-up = Dir._new('U')
-dn = Dir._new('D')
+local east = Dir._new('E')
+local west = Dir._new('W')
+local north = Dir._new('N')
+local south = Dir._new('S')
+local up = Dir._new('U')
+local dn = Dir._new('D')
+
+exports.east = east
+exports.west = west
+exports.north = north
+exports.south = south
+exports.up = up
+exports.dn = dn
 
 east._t.left = north
 north._t.left = west
@@ -104,6 +116,13 @@ north._t.back = south
 up._t.back = up
 dn._t.back = dn
 
+east._t.opp = west
+south._t.opp = north
+west._t.opp = east
+north._t.opp = south
+up._t.opp = dn
+dn._t.opp = up
+
 east._t.delta = P(1, 0, 0)
 west._t.delta = -east.delta
 north._t.delta = P(0, 0, -1)
@@ -114,33 +133,40 @@ dn._t.delta = -up.delta
 
 -- Memory.
 
-function loadPos()
-  f = fs.open('pos', 'r')
+local function loadPos()
+  local f = fs.open('pos', 'r')
   if f == nil then
     return P()
   end
-  x = tonumber(f.readLine())
-  y = tonumber(f.readLine())
-  z = tonumber(f.readLine())
+  local x = tonumber(f.readLine())
+  local y = tonumber(f.readLine())
+  local z = tonumber(f.readLine())
   return P(x, y, z)
 end
+exports.loadPos = loadPos
 
-function loadDir()
-  f = fs.open('dir', 'r')
+local function loadDir()
+  local f = fs.open('dir', 'r')
   if f == nil then
     return east
   end
   return Dir(f.read())
 end
+exports.loadDir = loadDir
 
-function writePos(p)
+local function writePos(p)
   f = fs.open('pos', 'w')
   f.write(p.x .. '\n' .. p.y .. '\n' .. p.z)
   f.close()
 end
+exports.writePos = writePos
 
-function writeDir(d)
+local function writeDir(d)
   f = fs.open('dir', 'w')
   f.write(d.name)
   f.close()
 end
+exports.writeDir = writeDir
+
+
+return exports

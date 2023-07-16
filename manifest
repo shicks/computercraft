@@ -3,3 +3,5 @@ safeturtle.lua
 blocks.lua
 geo.lua
 cat.lua
+loader.lua
+shaft.lua
