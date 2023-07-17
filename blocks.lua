@@ -122,8 +122,8 @@ end
 exports.shouldDigThrough = shouldDigThrough
 
 local canTravelThroughNames = {
-  'minecraft:lava' = true,
-  'minecraft:water' = true,
+  ['minecraft:lava'] = true,
+  ['minecraft:water'] = true,
 }
 
 local function canTravelThrough(info)
@@ -135,8 +135,8 @@ exports.canTravelThrough = canTravelThrough
 
 
 local fillNames = {
-  'minecraft:cobblestone' = true,
-  'minecraft:cobbled_deepslate' = true,
+  ['minecraft:cobblestone'] = true,
+  ['minecraft:cobbled_deepslate'] = true,
 }
 
 local function isFill(info)
@@ -148,7 +148,7 @@ exports.isFill = isFill
 
 
 local function isWater(info)
-  return info != nil and info.name == 'minecraft:water'
+  return info ~= nil and info.name == 'minecraft:water'
 end
 exports.isWater = isWater
 
@@ -160,18 +160,18 @@ exports.isWaterSource = isWaterSource
 -- NOTE: includes waterlogged blocks
 local function isFlowingWater(info)
   if info == nil then return false end
-  if isWater(info) then return info.state.level != 0 end
+  if isWater(info) then return info.state.level ~= 0 end
   return info.state.waterlogged == true
 end
 exports.isFlowingWater = isFlowingWater
 
 local function isLavaSource(info)
-  return info != nil and info.name == 'minecraft:lava' and info.state.level == 0
+  return info ~= nil and info.name == 'minecraft:lava' and info.state.level == 0
 end
 exports.isLavaSource = isLavaSource
 
 local function isFlowingLava(info)
-  return info != nil and info.name == 'minecraft:lava' and info.state.level != 0
+  return info ~= nil and info.name == 'minecraft:lava' and info.state.level ~= 0
 end
 exports.isFlowingLava = isFlowingLava
 

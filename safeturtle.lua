@@ -12,6 +12,52 @@ local bucketSlot = 0
 local emptySlot = 0
 
 
+local function _setDir(dir)
+  currentDir = dir
+  geo.writeDir(dir)
+end
+local function _setPos(pos)
+  currentPos = pos
+  geo.writePos(pos)
+end
+
+
+local function turnLeft()
+  local ok, reason = turtle.turnLeft()
+  if not ok then return false, reason end
+  _setDir(currentDir.left)
+  return true
+end
+exports.turnLeft = turnLeft
+
+
+local function turnRight()
+  local ok, reason = turtle.turnRight()
+  if not ok then return false, reason end
+  _setDir(currentDir.right)
+  return true
+end
+exports.turnRight = turnRight
+
+
+local function turnAbout()
+  local ok, reason = turnLeft()
+  if not ok then return false, reason end
+  return turnLeft()
+end
+exports.turnAbout = turnAbout
+
+
+local function turnTo(dir)
+  if currentDir == dir then return true end
+  if currentDir.left == dir then return turnLeft() end
+  if currentDir.right == dir then return turnRight() end
+  if currentDir.back == dir then return turnAbout() end
+  error('Bad direction: ' .. dir.name)
+end
+exports.turnTo = turnTo
+
+
 local function _withDir(dir, fn, fnUp, fnDn)
   if dir == geo.up then
     if not fnUp then error('no up function') end
@@ -60,20 +106,6 @@ local function unsafeDigDir(dir)
   return _withDir(dir, turtle.dig, turtle.digUp, turtle.digDown)
 end
 exports.unsafeDigDir = unsafeDigDir
-
-
--- NOTE: This does not turn back to the side
-local function digDir(dir)
-  if dir == geo.up then
-    return digUp()
-  elseif dir == geo.dn then
-    return digDown()
-  else
-    turnTo(dir)
-    return dig()
-  end
-end
-exports.digDir = digDir
 
 
 local function dig()
@@ -148,80 +180,18 @@ end
 exports.digUp = digUp
 
 
--- Dig and then move forward.  Guards against possible race conditions if a
--- block falls after the dig.
-local function digAndMove()
-  local ok, reason = dig()
-  if not ok then return false, reason end
-
-  local ok, info = turtle.inspect()
-  if ok and blocks.hasGravity(info) then return digAndMove() end
-
-  return forward()
-end
-exports.digAndMove = digAndMove
-
-
-local function _setDir(dir)
-  currentDir = dir
-  geo.writeDir(dir)
-end
-local function _setPos(pos)
-  currentPos = pos
-  geo.writePos(pos)
-end
-
-
-local function turnTo(dir)
-  if currentDir == dir then return true end
-  if currentDir.left == dir then return turnLeft() end
-  if currentDir.right == dir then return turnRight() end
-  if currentDir.back == dir then return turnAbout() end
-  error('Bad direction: ' .. dir.name)
-end
-exports.turnTo = turnTo
-
-
-local function turnLeft()
-  local ok, reason = turtle.turnLeft()
-  if not ok then return false, reason end
-  _setDir(currentDir.left)
-  return true
-end
-exports.turnLeft = turnLeft
-
-
-local function turnRight()
-  local ok, reason = turtle.turnRight()
-  if not ok then return false, reason end
-  _setDir(currentDir.right)
-  return true
-end
-exports.turnRight = turnRight
-
-
-local function turnAbout()
-  local ok, reason = turnLeft()
-  if not ok then return false, reason end
-  return turnLeft()
-end
-exports.turnAbout = turnAbout
-
-
--- NOTE: Does not turn back
-local function moveDir(dir)
+-- NOTE: This does not turn back to the side
+local function digDir(dir)
   if dir == geo.up then
-    return up()
+    return digUp()
   elseif dir == geo.dn then
-    return down()
-  elseif dir == currentDir.back then
-    return back()
+    return digDown()
+  else
+    turnTo(dir)
+    return dig()
   end
-  local ok, reason = turnTo(dir)
-  if not ok then return false, reason end
-  return forward()
 end
-exports.moveDir = moveDir
+exports.digDir = digDir
 
 
 local function up()
@@ -262,6 +232,36 @@ local function back()
   return true
 end
 exports.back = back
+
+
+-- NOTE: Does not turn back
+local function moveDir(dir)
+  if dir == geo.up then
+    return up()
+  elseif dir == geo.dn then
+    return down()
+  elseif dir == currentDir.back then
+    return back()
+  end
+  local ok, reason = turnTo(dir)
+  if not ok then return false, reason end
+  return forward()
+end
+exports.moveDir = moveDir
+
+
+-- Dig and then move forward.  Guards against possible race conditions if a
+-- block falls after the dig.
+local function digAndMove()
+  local ok, reason = dig()
+  if not ok then return false, reason end
+
+  local ok, info = turtle.inspect()
+  if ok and blocks.hasGravity(info) then return digAndMove() end
+
+  return forward()
+end
+exports.digAndMove = digAndMove
 
 
 -- Dig up until there's no blocks with gravity directly above us.
@@ -334,7 +334,7 @@ local function clearFluidDir(dir)
             if fuelSlot > 0 then
               turtle.select(fuelSlot)
               turtle.refuel()
-              if fuelSlot != bucketSlot then turtle.transferTo(bucketSlot) end
+              if fuelSlot ~= bucketSlot then turtle.transferTo(bucketSlot) end
             end
             os.sleep(2) -- give some time to reflow
             ok, info = inspectDir(dir)
