@@ -22,6 +22,13 @@ local function _setPos(pos)
 end
 
 
+local function reset(pos, dir)
+  _setPos(pos)
+  _setDir(dir)
+end
+exports.reset = reset
+
+
 local function turnLeft()
   local ok, reason = turtle.turnLeft()
   if not ok then return false, reason end
