@@ -94,3 +94,33 @@ describe('safeturtle.turnAbout', function()
     assertSame(geo.north, dir)
   end)
 end)
+
+describe('safeturtle.turnTo', function()
+  it('should turn from east to north', function()
+    turtle = mock({
+        {'turnLeft', {}, {true}},
+    })
+    st.reset(P(), geo.east)
+    assert(st.turnTo(geo.north))
+    assertSame(geo.north, dir)
+  end)
+
+  it('should turn from east to west', function()
+    turtle = mock({
+        {'turnLeft', {}, {true}},
+        {'turnLeft', {}, {true}},
+    })
+    st.reset(P(), geo.east)
+    assert(st.turnTo(geo.west))
+    assertSame(geo.west, dir)
+  end)
+
+  it('should turn from east to south', function()
+    turtle = mock({
+        {'turnRight', {}, {true}},
+    })
+    st.reset(P(), geo.east)
+    assert(st.turnTo(geo.south))
+    assertSame(geo.south, dir)
+  end)
+end)
