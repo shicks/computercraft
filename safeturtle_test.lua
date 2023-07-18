@@ -17,22 +17,80 @@ beforeEach(function()
   st.reset(geo.P(), geo.east)
 end)
 
+afterEach(function()
+  if turtle then
+    turtle.verify()
+    turtle = nil
+  end
+end)
+
+describe('test harness', function()
+  it('should start at (0,0,0)', function()
+    assertSame(P(0, 0, 0), pos)
+  end)
+  it('should start facing east', function()
+    assertSame(geo.east, dir)
+  end)
+end)
+
 describe('safeturtle.turnLeft', function()
   it('should update direction', function()
     turtle = mock({{'turnLeft', {}, {true}}})
-    assertSame(geo.east, dir)
     assert(st.turnLeft())
     assertSame(geo.north, dir)
-    turtle.verify()
+  end)
+
+  it('should propagate errors', function()
+    turtle = mock({{'turnLeft', {}, {false, 'xyz'}}})
+    local ok, reason = st.turnLeft()
+    assertSame(false, ok)
+    assertSame('xyz', reason)
+    assertSame(geo.east, dir)
   end)
 end)
 
 describe('safeturtle.turnRight', function()
   it('should update direction', function()
     turtle = mock({{'turnRight', {}, {true}}})
-    assertSame(geo.east, dir)
     assert(st.turnRight())
     assertSame(geo.south, dir)
-    turtle.verify()
+  end)
+
+  it('should propagate errors', function()
+    turtle = mock({{'turnRight', {}, {false, 'xyz'}}})
+    local ok, reason = st.turnRight()
+    assertSame(false, ok)
+    assertSame('xyz', reason)
+    assertSame(geo.east, dir)
+  end)
+end)
+
+describe('safeturtle.turnAbout', function()
+  it('should update direction', function()
+    turtle = mock({
+        {'turnLeft', {}, {true}},
+        {'turnLeft', {}, {true}},
+    })
+    assert(st.turnAbout())
+    assertSame(geo.west, dir)
+  end)
+
+  it('should propagate errors from the first call', function()
+    turtle = mock({{'turnLeft', {}, {false, 'abc'}}})
+    ok, reason = st.turnAbout()
+    assertSame(false, ok)
+    assertSame('abc', reason)
+    assertSame(geo.east, dir)
+  end)
+
+  it('should propagate errors from the second call', function()
+    turtle = mock({
+        {'turnLeft', {}, {true}},
+        {'turnLeft', {}, {false, 'abc'},
+    }})
+    ok, reason = st.turnAbout()
+    assertSame(false, ok)
+    assertSame('abc', reason)
+    assertSame(geo.north, dir)
   end)
 end)
