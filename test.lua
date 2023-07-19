@@ -8,6 +8,7 @@ local failed = false
 
 local befores = {{}}
 local afters = {{}}
+local tearDowns = {{}}
 
 local passCount = 0
 local failCount = 0
@@ -42,11 +43,17 @@ function afterEach(fn)
   a[#a + 1] = fn
 end
 
+function tearDown(fn)
+  local t = tearDowns[#tearDowns]
+  t[#t + 1] = fn
+end
+
 function describe(ctx, fn)
   print(indent .. '\x1b[1m' .. ctx .. '\x1b[m ...\n')
   indent = indent .. '  '
   befores[#befores + 1] = {}
   afters[#afters + 1] = {}
+  tearDowns[#tearDowns + 1] = {}
   local ok, err = pcall(fn)
   if not ok then
     print('Error: ' .. err)
@@ -58,6 +65,9 @@ function describe(ctx, fn)
   table.remove(befores, #befores)
   if afterTest then print('') end
   afterTest = false
+  for _, t in pairs(table.remove(tearDowns, #tearDowns)) do
+    t()
+  end
 end
 
 function it(name, fn)

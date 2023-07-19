@@ -18,6 +18,8 @@ end
 
 function dump(obj)
   if type(obj) ~= 'table' then return tostring(obj) end
+  local mt = getmetatable(obj)
+  if mt and mt.__index then return tostring(obj) end
   local s = '{'
   local i = 1
   local first = true

@@ -89,12 +89,12 @@ end
 
 
 function st.inspectDir(dir)
-  return _.withDir(dir, turtle.inspect, turtle.inspectUp, turtle.inspectDn)
+  return _.withDir(dir, turtle.inspect, turtle.inspectUp, turtle.inspectDown)
 end
 
 
 function st.placeDir(dir)
-  return _.withDir(dir, turtle.place, turtle.placeUp, turtle.placeDn)
+  return _.withDir(dir, turtle.place, turtle.placeUp, turtle.placeDown)
 end
 
 

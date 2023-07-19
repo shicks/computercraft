@@ -15,11 +15,11 @@ return function(expected)
         if i < #expected then error('Missing expected calls') end
       end
     end
-    local row = expected[i]
-    if row == nil then error('Unexpected call to ' .. key) end
-    i = i + 1
-    if row[1] ~= key then error('Expected call to ' .. row[1] .. ' but got ' .. key) end
     return function(...)
+      local row = expected[i]
+      if row == nil then error('Unexpected call to ' .. key) end
+      i = i + 1
+      if row[1] ~= key then error('Expected call to ' .. row[1] .. ' but got ' .. key) end
       local args = {...}
       wantargs = row[2]
       if not eq(args, wantargs) then error('Unexpected args to ' .. key .. ': expected ' .. dump(wantargs) .. ', but got ' .. dump(args)) end

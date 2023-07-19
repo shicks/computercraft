@@ -1,17 +1,25 @@
 require('testutil')
+local stub = require('stub')()
+local mock = require('mock')
 
 local geo = require('geo')
 local pos = geo.P()
 local dir = geo.east
-geo.loadPos = function() return pos end
-geo.loadDir = function() return dir end
-geo.writePos = function(p) pos = p end
-geo.writeDir = function(d) dir = d end
 
-local mock = require('mock')
+-- stub out the load/write functions
+stub.replace(geo, 'loadPos', function() return pos end)
+stub.replace(geo, 'loadDir', function() return dir end)
+stub.replace(geo, 'writePos', function(p) pos = p end)
+stub.replace(geo, 'writeDir', function(d) dir = d end)
+tearDown(stub.reset)
 
 local st = require('safeturtle')
 local P = geo.P
+
+local fakeBlocks = {
+  stone = {name = 'minecraft:stone'},
+  deepslate = {name = 'minecraft:deepslate'},
+}
 
 beforeEach(function()
   st.reset(geo.P(), geo.east)
@@ -167,4 +175,88 @@ describe('safeturtle.turnTo', function()
     local ok, _ = pcall(function() st.turnTo(geo.dn) end)
     assertSame(false, ok)
   end)
+end)
+
+describe('safeturtle.inspectDir', function()
+  it('should work with nil', function()
+    turtle = mock({
+      {'inspect', {}, {true, fakeBlocks.stone}},
+    })
+    local ok, block = st.inspectDir()
+    assertSame(true, ok)
+    assertSame(fakeBlocks.stone, block)
+  end)
+
+  it('should work in current direction', function()
+    turtle = mock({
+      {'inspect', {}, {true, fakeBlocks.stone}},
+    })
+    local ok, block = st.inspectDir(geo.east)
+    assertSame(true, ok)
+    assertSame(fakeBlocks.stone, block)
+  end)
+
+  it('should work up', function()
+    turtle = mock({
+      {'inspectUp', {}, {true, fakeBlocks.stone}},
+    })
+    local ok, block = st.inspectDir(geo.up)
+    assertSame(true, ok)
+    assertSame(fakeBlocks.stone, block)
+  end)
+
+  it('should work down', function()
+    turtle = mock({
+      {'inspectDown', {}, {true, fakeBlocks.stone}},
+    })
+    local ok, block = st.inspectDir(geo.dn)
+    assertSame(true, ok)
+    assertSame(fakeBlocks.stone, block)
+  end)
+
+  it('should work to left', function()
+    turtle = mock({
+      {'turnLeft', {}, {true}},
+      {'inspect', {}, {true, fakeBlocks.deepslate}},
+      {'turnRight', {}, {true}},
+    })
+    local ok, block = st.inspectDir(geo.north)
+    assertSame(true, ok)
+    assertSame(fakeBlocks.deepslate, block)
+  end)
+
+  it('should work to right', function()
+    turtle = mock({
+      {'turnRight', {}, {true}},
+      {'inspect', {}, {true, fakeBlocks.deepslate}},
+      {'turnLeft', {}, {true}},
+    })
+    local ok, block = st.inspectDir(geo.south)
+    assertSame(true, ok)
+    assertSame(fakeBlocks.deepslate, block)
+  end)
+
+  it('should work to rear', function()
+    turtle = mock({
+      {'turnLeft', {}, {true}},
+      {'turnLeft', {}, {true}},
+      {'inspect', {}, {true, fakeBlocks.deepslate}},
+      {'turnLeft', {}, {true}},
+      {'turnLeft', {}, {true}},
+    })
+    local ok, block = st.inspectDir(geo.west)
+    assertSame(true, ok)
+    assertSame(fakeBlocks.deepslate, block)
+  end)
+
+  it('should propagate a false return', function()
+    turtle = mock({
+      {'inspect', {}, {false, nil}},
+    })
+    local ok, block = st.inspectDir()
+    assertSame(false, ok)
+    assertSame(nil, block)
+  end)
+
+  -- TODO: What if the turn errors?  We don't currently handle it at all.
 end)

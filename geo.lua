@@ -64,6 +64,9 @@ end
 function Dir.mt.__newindex()
   error('Dir is immutable')
 end
+function Dir.mt.__tostring(d)
+  return 'Dir(' .. d._t.name .. ')'
+end
 function Dir._new(name)
   return setmetatable({_t = {name = name}}, Dir.mt)
 end
