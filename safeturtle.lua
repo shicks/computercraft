@@ -1,6 +1,9 @@
 -- Library for safe turtle movement/manipulation
 
-local exports = {}
+local st = {} -- public exports
+local _ = {}  -- private (and public) members
+
+setmetatable(_, {__index = st})
 
 local blocks = require('blocks')
 local geo = require('geo')
@@ -11,61 +14,50 @@ local fillSlot = 0
 local bucketSlot = 0
 local emptySlot = 0
 
-
-local function _setDir(dir)
+function _.setDir(dir)
   currentDir = dir
   geo.writeDir(dir)
 end
-local function _setPos(pos)
+function _.setPos(pos)
   currentPos = pos
   geo.writePos(pos)
 end
 
 
-local function reset(pos, dir)
-  _setPos(pos)
-  _setDir(dir)
+function st.reset(pos, dir)
+  _.setPos(pos)
+  _.setDir(dir)
 end
-exports.reset = reset
 
-
-local function turnLeft()
+function st.turnLeft()
   local ok, reason = turtle.turnLeft()
   if not ok then return false, reason end
-  _setDir(currentDir.left)
+  _.setDir(currentDir.left)
   return true
 end
-exports.turnLeft = turnLeft
 
-
-local function turnRight()
+function st.turnRight()
   local ok, reason = turtle.turnRight()
   if not ok then return false, reason end
-  _setDir(currentDir.right)
+  _.setDir(currentDir.right)
   return true
 end
-exports.turnRight = turnRight
 
-
-local function turnAbout()
-  local ok, reason = turnLeft()
+function st.turnAbout()
+  local ok, reason = _.turnLeft()
   if not ok then return false, reason end
-  return turnLeft()
+  return _.turnLeft()
 end
-exports.turnAbout = turnAbout
 
-
-local function turnTo(dir)
+function st.turnTo(dir)
   if currentDir == dir then return true end
-  if currentDir.left == dir then return turnLeft() end
-  if currentDir.right == dir then return turnRight() end
-  if currentDir.back == dir then return turnAbout() end
+  if currentDir.left == dir then return _.turnLeft() end
+  if currentDir.right == dir then return _.turnRight() end
+  if currentDir.back == dir then return _.turnAbout() end
   error('Bad direction: ' .. dir.name)
 end
-exports.turnTo = turnTo
 
-
-local function _withDir(dir, fn, fnUp, fnDn)
+function _.withDir(dir, fn, fnUp, fnDn)
   if dir == geo.up then
     if not fnUp then error('no up function') end
     return fnUp()
@@ -76,46 +68,42 @@ local function _withDir(dir, fn, fnUp, fnDn)
     return fn()
   else
     local lastDir = currentDir
-    turnTo(dir)
+    _.turnTo(dir)
     local result = {fn()}
-    turnTo(lastDir)
+    _.turnTo(lastDir)
     return unpack(result)
   end
 end
 
-
-local function _withForward(dir, fn)
+function _.withForward(dir, fn)
   if dir == geo.up or dir == geo.dn or dir == currentDir or dir == nil then
     return fn()
   else
     local lastDir = currentDir
-    turnTo(dir)
+    _.turnTo(dir)
     local result = {fn()}
-    turnTo(lastDir)
+    _.turnTo(lastDir)
     return unpack(result)
   end
 end
 
 
-local function inspectDir(dir)
-  return _withDir(dir, turtle.inspect, turtle.inspectUp, turtle.inspectDn)
+function st.inspectDir(dir)
+  return _.withDir(dir, turtle.inspect, turtle.inspectUp, turtle.inspectDn)
 end
-exports.inspectDir = inspectDir
 
 
-local function placeDir(dir)
-  return _withDir(dir, turtle.place, turtle.placeUp, turtle.placeDn)
+function st.placeDir(dir)
+  return _.withDir(dir, turtle.place, turtle.placeUp, turtle.placeDn)
 end
-exports.placeDir = placeDir
 
 
-local function unsafeDigDir(dir)
-  return _withDir(dir, turtle.dig, turtle.digUp, turtle.digDown)
+function st.unsafeDigDir(dir)
+  return _.withDir(dir, turtle.dig, turtle.digUp, turtle.digDown)
 end
-exports.unsafeDigDir = unsafeDigDir
 
 
-local function dig()
+function st.dig()
   -- Look at what's ahead.
   local ok, info = turtle.inspect()
   if not ok then return false, 'No block' end
@@ -131,7 +119,7 @@ local function dig()
     local ok, reason = turtle.dig()
     if not ok then return false, reason end
     os.sleep(1)
-    return dig()
+    return _.dig()
   end
 
   local ok, reason = turtle.dig()
@@ -145,10 +133,9 @@ local function dig()
 
   return true
 end
-exports.dig = dig
 
 
-local function digDown()
+function st.digDown()
   -- Look at what's there.
   local ok, info = turtle.inspectDown()
   if not ok then return false, 'No block' end
@@ -160,10 +147,9 @@ local function digDown()
 
   return turtle.dig()
 end
-exports.digDown = digDown
 
 
-local function digUp()
+function st.digUp()
   -- Look at what's there.
   local ok, info = turtle.inspectUp()
   if not ok then return false, 'No block' end
@@ -184,65 +170,59 @@ local function digUp()
 
   return turtle.dig()
 end
-exports.digUp = digUp
 
 
 -- NOTE: This does not turn back to the side
-local function digDir(dir)
+function st.digDir(dir)
   if dir == geo.up then
-    return digUp()
+    return _.digUp()
   elseif dir == geo.dn then
-    return digDown()
+    return _.digDown()
   else
-    turnTo(dir)
+    _.turnTo(dir)
     return dig()
   end
 end
-exports.digDir = digDir
 
 
-local function up()
+function st.up()
   local ok, reason = turtle.up()
   if not ok then return false, reason end
-  _setPos(currentPos + up.delta)
+  _.setPos(currentPos + up.delta)
   return true
 end
-exports.up = up
 
 
-local function down()
-  local ok, reason = clearGravityAbove()
+function st.down()
+  local ok, reason = _.clearGravityAbove()
   if not ok then return false, reason end
   ok, reason = turtle.down()
   if not ok then return false, reason end
-  _setPos(currentPos + down.delta)
+  _.setPos(currentPos + down.delta)
   return true
 end
-exports.down = down
 
 
-local function forward()
-  local ok, reason = clearGravityAbove()
+function st.forward()
+  local ok, reason = _.clearGravityAbove()
   if not ok then return false, reason end
   ok, reason = turtle.forward()
   if not ok then return false, reason end
-  _setPos(currentPos + currentDir.delta)
+  _.setPos(currentPos + currentDir.delta)
   return true
 end
-exports.forward = forward
 
 
-local function back()
+function st.back()
   local ok, reason = turtle.back()
   if not ok then return false, reason end
-  _setPos(currentPos - currentDir.delta)
+  _.setPos(currentPos - currentDir.delta)
   return true
 end
-exports.back = back
 
 
 -- NOTE: Does not turn back
-local function moveDir(dir)
+function st.moveDir(dir)
   if dir == geo.up then
     return up()
   elseif dir == geo.dn then
@@ -250,41 +230,38 @@ local function moveDir(dir)
   elseif dir == currentDir.back then
     return back()
   end
-  local ok, reason = turnTo(dir)
+  local ok, reason = _.turnTo(dir)
   if not ok then return false, reason end
-  return forward()
+  return _.forward()
 end
-exports.moveDir = moveDir
 
 
 -- Dig and then move forward.  Guards against possible race conditions if a
 -- block falls after the dig.
-local function digAndMove()
-  local ok, reason = dig()
+function st.digAndMove()
+  local ok, reason = _.dig()
   if not ok then return false, reason end
 
   local ok, info = turtle.inspect()
-  if ok and blocks.hasGravity(info) then return digAndMove() end
+  if ok and blocks.hasGravity(info) then return _.digAndMove() end
 
-  return forward()
+  return _.forward()
 end
-exports.digAndMove = digAndMove
 
 
 -- Dig up until there's no blocks with gravity directly above us.
 -- This prevents potential race conditions if we somehow end up
 -- beneath one of these blocks and then move out, causing it to
 -- fall behind us and block the path.
-local function clearGravityAbove()
+function st.clearGravityAbove()
   local ok, info = turtle.inspectUp()
-  if ok and blocks.hasGravity(info) then return digUp() end
+  if ok and blocks.hasGravity(info) then return _.digUp() end
   return true
 end
-exports.clearGravityAbove = clearGravityAbove
 
 
 -- Try to get to a given position.  Will dig through natural blocks.
-function goTo(pos)
+function _.goTo(pos)
   local dir = pos - currentPos
   -- sort directions, try to go the biggest dir first
   -- TODO - how to queue up intended directions?
@@ -292,7 +269,7 @@ function goTo(pos)
 end
 
 
-local function findSlot(pred, firstTry)
+function st.findSlot(pred, firstTry)
   if firstTry then
     if pred(firstTry) then return firstTry end
   end
@@ -301,88 +278,83 @@ local function findSlot(pred, firstTry)
   end
   return 0
 end
-exports.findSlot = findSlot
 
 
-local function findItem(name, firstTry)
+function st.findItem(name, firstTry)
   local pred = name
   if type(name) == 'string' then
     pred = function(info) return info.name == name end
   end
-  return findSlot(function(i)
+  return _.findSlot(function(i)
       local info = turtle.getItemDetail(i)
       return info and pred(info)
   end, firstTry)
 end
-exports.findItem = findItem
 
 
 -- Try to clear a fluid in a direction.
 -- This requires looking at inventory a bit.
-local function clearFluidDir(dir)
+function st.clearFluidDir(dir)
   if not dir then dir = currentDir end
-  return _withForward(dir, function()
-    local ok, info = inspectDir(dir)
+  return _.withForward(dir, function()
+    local ok, info = _.inspectDir(dir)
     if not ok or not blocks.isFluid(info) then return true end
     -- we have a fluid, so try to fill it
     local delay = 0.5
     if info.name == 'minecraft:lava' then delay = 2 end
     if blocks.isLavaSource(info) and turtle.getFuelLevel() < turtle.getFuelLimit() then
       -- it's a lava source, so try to use it to refuel
-      bucketSlot = findItem('minecraft:bucket', bucketSlot)
+      bucketSlot = _.findItem('minecraft:bucket', bucketSlot)
       if bucketSlot > 0 then
-        emptySlot = findSlot(function(i)
+        emptySlot = _.findSlot(function(i)
             return turtle.getItemCount(i) == 0 end,
           emptySlot)
         if turtle.getItemCount(bucketSlot) == 1 or emptySlot > 0 then
           turtle.select(bucketSlot)
-          if placeDir(dir) then
-            local fuelSlot = findItem('minecraft:lava_bucket', bucketSlot)
+          if _.placeDir(dir) then
+            local fuelSlot = _.findItem('minecraft:lava_bucket', bucketSlot)
             if fuelSlot > 0 then
               turtle.select(fuelSlot)
               turtle.refuel()
               if fuelSlot ~= bucketSlot then turtle.transferTo(bucketSlot) end
             end
             os.sleep(2) -- give some time to reflow
-            ok, info = inspectDir(dir)
+            ok, info = _.inspectDir(dir)
             if not ok or not blocks.isFluid(info) then return true end
           end
         end
       end
     end
     -- find a fill block in inventory
-    fillSlot = findItem(blocks.isFill, fillSlot)
+    fillSlot = _.findItem(blocks.isFill, fillSlot)
     if fillSlot == 0 then return false, 'no suitable fill item' end
     turtle.select(fillSlot)
-    ok, reason = placeDir(dir)
+    ok, reason = _.placeDir(dir)
     if not ok then return false, reason end
-    ok, reason = unsafeDigDir(dir)
+    ok, reason = _.unsafeDigDir(dir)
     if not ok then return false, reason end
     os.sleep(delay)
-    ok, info = inspectDir(dir)
+    ok, info = _.inspectDir(dir)
     if ok and blocks.isFluid(info) then
-      ok, reason = placeDir(dir)
+      ok, reason = _.placeDir(dir)
       if not ok then return false, reason end
     end
     return true
   end)
 end
-exports.clearFluidDir = clearFluidDir
 
 
-local function getCurrentDir()
+function st.getCurrentDir()
   return currentDir
 end
-exports.getCurrentDir = getCurrentDir
 
 
-local function fillDir(dir)
+function st.fillDir(dir)
   fillSlot = findItem(blocks.isFill, fillSlot)
   if fillSlot == 0 then return false, 'no suitable fill item' end
   turtle.select(fillSlot)
-  return placeDir(dir)
+  return _.placeDir(dir)
 end
-exports.fillDir = fillDir
 
 
-return exports
+return st
