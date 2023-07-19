@@ -260,3 +260,73 @@ describe('safeturtle.inspectDir', function()
 
   -- TODO: What if the turn errors?  We don't currently handle it at all.
 end)
+
+describe('safeturtle.placeDir', function()
+  it('should work with nil', function()
+    turtle = mock({
+      {'place', {}, {true}},
+    })
+    assert(st.placeDir())
+  end)
+
+  it('should work in current direction', function()
+    turtle = mock({
+      {'place', {}, {true}},
+    })
+    assert(st.placeDir(geo.east))
+  end)
+
+  it('should work up', function()
+    turtle = mock({
+      {'placeUp', {}, {true}},
+    })
+    assert(st.placeDir(geo.up))
+  end)
+
+  it('should work down', function()
+    turtle = mock({
+      {'placeDown', {}, {true}},
+    })
+    assert(st.placeDir(geo.dn))
+  end)
+
+  it('should work to left', function()
+    turtle = mock({
+      {'turnLeft', {}, {true}},
+      {'place', {}, {true}},
+      {'turnRight', {}, {true}},
+    })
+    assert(st.placeDir(geo.north))
+  end)
+
+  it('should work to right', function()
+    turtle = mock({
+      {'turnRight', {}, {true}},
+      {'place', {}, {true}},
+      {'turnLeft', {}, {true}},
+    })
+    assert(st.placeDir(geo.south))
+  end)
+
+  it('should work to rear', function()
+    turtle = mock({
+      {'turnLeft', {}, {true}},
+      {'turnLeft', {}, {true}},
+      {'place', {}, {true}},
+      {'turnLeft', {}, {true}},
+      {'turnLeft', {}, {true}},
+    })
+    assert(st.placeDir(geo.west))
+  end)
+
+  it('should propagate a false return', function()
+    turtle = mock({
+      {'place', {}, {false, 'xyz'}},
+    })
+    local ok, reason = st.placeDir()
+    assertSame(false, ok)
+    assertSame('xyz', reason)
+  end)
+
+  -- TODO: What if the turn errors?  We don't currently handle it at all.
+end)
