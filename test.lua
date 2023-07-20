@@ -64,19 +64,18 @@ function assertSame(expected, actual)
 end
 
 
-local Matcher = {mt = {}, prototype = {}}
-Matcher.mt.__index = Matcher.prototype
-function Matcher.prototype.__bnot(m)
+local Matcher = {mt = {}}
+function Matcher.mt.__bnot(m)
   return matcher(
       function(subject) return not m.matches(subject) end,
       function() return 'not ' .. m.describe() end)
 end
-function Matcher.prototype.__bor(a, b)
+function Matcher.mt.__bor(a, b)
   return matcher(
       function(subject) return a.matches(subject) or b.matches(subject) end,
       function() return '(' .. a.describe() .. ' | ' .. b.describe() .. ')' end)
 end
-function Matcher.prototype.__band(a, b)
+function Matcher.mt.__band(a, b)
   return matcher(
       function(subject) return a.matches(subject) and b.matches(subject) end,
       function() return '(' .. a.describe() .. ' & ' .. b.describe() .. ')' end)
@@ -209,10 +208,13 @@ function it(name, fn)
   afterTest = true
 end
 
-for _, test in pairs({...}) do
-  describe(test, function()
-    require(test:gsub('.lua$', ''))
-  end)
-end
+-- Only do this if run as "main"
+if not pcall(debug.getlocal, 4, 1) then
+  for _, test in pairs({...}) do
+    describe(test, function()
+      require(test:gsub('.lua$', ''))
+    end)
+  end
 
-testSummary()
+  testSummary()
+end

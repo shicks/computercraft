@@ -1,4 +1,3 @@
-require('testutil')
 local stub = require('stub')()
 local mock = require('mock')
 
