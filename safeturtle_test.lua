@@ -400,3 +400,14 @@ describe('safeturtle.unsafeDigDir', function()
 
   -- TODO: What if the turn errors?  We don't currently handle it at all.
 end)
+
+describe('safeturtle.dig', function()
+  it('should fail when nothing in front', function()
+    turtle = mock({
+      {'inspect', {}, {false}},
+    })
+    local ok, reason = st.dig()
+    assertSame(false, ok)
+    assertSame('No block', reason)
+  end)
+end)

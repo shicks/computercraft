@@ -13,6 +13,103 @@ local tearDowns = {{}}
 local passCount = 0
 local failCount = 0
 
+function dump(obj)
+  if type(obj) ~= 'table' then return tostring(obj) end
+  local mt = getmetatable(obj)
+  if mt and mt.__index then return tostring(obj) end
+  local s = '{'
+  local i = 1
+  local first = true
+  for k, v in pairs(obj) do
+    if not first then s = s .. ', ' end
+    first = false
+    if k ~= i then
+      s = s .. tostring(k) .. ': '
+    end
+    i = i + 1
+    s = s .. dump(v)
+  end
+  return s .. '}'
+end
+
+function eq(left, right)
+  local t = type(left)
+  if t ~= type(right) then return false end
+  if t == 'table' then
+    local seen = {}
+    for k, v in pairs(left) do
+      if not eq(v, right[k]) then return false end
+      seen[k] = true
+    end
+    for k, v in pairs(right) do
+      if not seen[k] then return false end
+    end
+    return getmetatable(left) == getmetatable(right)
+  else
+    return left == right
+  end
+end
+
+-- TODO - delete me
+function assertEqual(expected, actual)
+  if not eq(expected, actual) then
+    error('Expected equal(' .. dump(expected) .. ') but got ' .. dump(actual), 2)
+  end
+end
+
+function assertSame(expected, actual)
+  if expected ~= actual then
+    error('Expected same(' .. tostring(expected) .. ') but got ' .. tostring(actual), 2)
+  end
+end
+
+
+local Matcher = {mt = {}, prototype = {}}
+Matcher.mt.__index = Matcher.prototype
+function Matcher.prototype.__bnot(m)
+  return matcher(
+      function(subject) return not m.matches(subject) end,
+      function() return 'not ' .. m.describe() end)
+end
+function Matcher.prototype.__bor(a, b)
+  return matcher(
+      function(subject) return a.matches(subject) or b.matches(subject) end,
+      function() return '(' .. a.describe() .. ' | ' .. b.describe() .. ')' end)
+end
+function Matcher.prototype.__band(a, b)
+  return matcher(
+      function(subject) return a.matches(subject) and b.matches(subject) end,
+      function() return '(' .. a.describe() .. ' & ' .. b.describe() .. ')' end)
+end
+function matcher(pred, name)
+  if type(name) == 'string' then name = function() return name end end
+  return setmetatable({
+    matches = pred,
+    describe = name,
+  }, Matcher.mt)
+end
+
+function is(expected)
+  return matcher(
+      function(subject) return subject == expected end,
+      function() return 'be ' .. tostring(expected) end)
+end
+function eql(expected)
+  return matcher(
+      function(subject) return eq(subject, expected) end,
+      function() return 'deep-equal ' .. dump(expected) end)
+end
+
+function isMatcher(matcher)
+  return getmetatable(matcher) == Matcher.mt
+end
+
+function expect(subject, matcher)
+  if not isMatcher(matcher) then matcher = is(matcher) end
+  if matcher.matches(subject) then return end
+  error('Expected ' .. dump(subject) .. ' to ' .. matcher.describe(), 2)
+end
+
 local function testSummary()
   local s = ''
   if passCount > 0 then
