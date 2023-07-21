@@ -58,19 +58,6 @@ function assertThrows(fn, ...)
   return caught  
 end
 
--- TODO - delete me
-function assertEqual(expected, actual)
-  if not eq(expected, actual) then
-    error('Expected equal(' .. dump(expected) .. ') but got ' .. dump(actual), 2)
-  end
-end
-
-function assertSame(expected, actual)
-  if expected ~= actual then
-    error('Expected same(' .. tostring(expected) .. ') but got ' .. tostring(actual), 2)
-  end
-end
-
 
 local Matcher = {mt = {}}
 function Matcher.mt.__bnot(m)
