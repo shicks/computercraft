@@ -1,5 +1,4 @@
 local stub = require('stub')()
-local mock = require('mock')
 
 local geo = require('geo')
 local pos = geo.P()
@@ -33,10 +32,10 @@ end)
 
 describe('test harness', function()
   it('should start at (0,0,0)', function()
-    assertSame(P(0, 0, 0), pos)
+    expect(pos, is(P(0, 0, 0)))
   end)
   it('should start facing east', function()
-    assertSame(geo.east, dir)
+    expect(dir, is(geo.east))
   end)
 end)
 
@@ -44,15 +43,13 @@ describe('safeturtle.turnLeft', function()
   it('should update direction', function()
     turtle = mock({{'turnLeft', {}, {true}}})
     assert(st.turnLeft())
-    assertSame(geo.north, dir)
+    expect(dir, is(geo.north))
   end)
 
   it('should propagate errors', function()
     turtle = mock({{'turnLeft', {}, {false, 'xyz'}}})
-    local ok, reason = st.turnLeft()
-    assertSame(false, ok)
-    assertSame('xyz', reason)
-    assertSame(geo.east, dir)
+    expect({st.turnLeft()}, eql({false, 'xyz'}))
+    expect(dir, is(geo.east))
   end)
 end)
 
@@ -60,15 +57,13 @@ describe('safeturtle.turnRight', function()
   it('should update direction', function()
     turtle = mock({{'turnRight', {}, {true}}})
     assert(st.turnRight())
-    assertSame(geo.south, dir)
+    expect(dir, is(geo.south))
   end)
 
   it('should propagate errors', function()
     turtle = mock({{'turnRight', {}, {false, 'xyz'}}})
-    local ok, reason = st.turnRight()
-    assertSame(false, ok)
-    assertSame('xyz', reason)
-    assertSame(geo.east, dir)
+    expect({st.turnRight()}, eql({false, 'xyz'}))
+    expect(dir, is(geo.east))
   end)
 end)
 
@@ -79,15 +74,13 @@ describe('safeturtle.turnAbout', function()
         {'turnLeft', {}, {true}},
     })
     assert(st.turnAbout())
-    assertSame(geo.west, dir)
+    expect(dir, is(geo.west))
   end)
 
   it('should propagate errors from the first call', function()
     turtle = mock({{'turnLeft', {}, {false, 'abc'}}})
-    ok, reason = st.turnAbout()
-    assertSame(false, ok)
-    assertSame('abc', reason)
-    assertSame(geo.east, dir)
+    expect({st.turnAbout()}, eql({false, 'abc'}))
+    expect(dir, is(geo.east))
   end)
 
   it('should propagate errors from the second call', function()
@@ -95,10 +88,8 @@ describe('safeturtle.turnAbout', function()
         {'turnLeft', {}, {true}},
         {'turnLeft', {}, {false, 'abc'},
     }})
-    ok, reason = st.turnAbout()
-    assertSame(false, ok)
-    assertSame('abc', reason)
-    assertSame(geo.north, dir)
+    expect({st.turnAbout()}, eql({false, 'abc'}))
+    expect(dir, is(geo.north))
   end)
 end)
 
@@ -107,7 +98,7 @@ describe('safeturtle.turnTo', function()
     turtle = mock({})
     st.reset(P(), geo.east)
     assert(st.turnTo(geo.east))
-    assertSame(geo.east, dir)
+    expect(dir, is(geo.east))
   end)
 
   it('should turn from east to north', function()
@@ -116,7 +107,7 @@ describe('safeturtle.turnTo', function()
     })
     st.reset(P(), geo.east)
     assert(st.turnTo(geo.north))
-    assertSame(geo.north, dir)
+    expect(dir, is(geo.north))
   end)
 
   it('should turn from east to west', function()
@@ -126,7 +117,7 @@ describe('safeturtle.turnTo', function()
     })
     st.reset(P(), geo.east)
     assert(st.turnTo(geo.west))
-    assertSame(geo.west, dir)
+    expect(dir, is(geo.west))
   end)
 
   it('should turn from east to south', function()
@@ -135,7 +126,7 @@ describe('safeturtle.turnTo', function()
     })
     st.reset(P(), geo.east)
     assert(st.turnTo(geo.south))
-    assertSame(geo.south, dir)
+    expect(dir, is(geo.south))
   end)
 
   it('should turn from north to east', function()
@@ -144,7 +135,7 @@ describe('safeturtle.turnTo', function()
     })
     st.reset(P(), geo.north)
     assert(st.turnTo(geo.east))
-    assertSame(geo.east, dir)
+    expect(dir, is(geo.east))
   end)
 
   it('should turn from west to east', function()
@@ -154,7 +145,7 @@ describe('safeturtle.turnTo', function()
     })
     st.reset(P(), geo.west)
     assert(st.turnTo(geo.east))
-    assertSame(geo.east, dir)
+    expect(dir, is(geo.east))
   end)
 
   it('should turn from south to east', function()
@@ -163,16 +154,14 @@ describe('safeturtle.turnTo', function()
     })
     st.reset(P(), geo.south)
     assert(st.turnTo(geo.east))
-    assertSame(geo.east, dir)
+    expect(dir, is(geo.east))
   end)
 
   it('should fail to turn to up/down', function()
     turtle = mock({})
     st.reset(P(), geo.east)
-    local ok, _ = pcall(function() st.turnTo(geo.up) end)
-    assertSame(false, ok)
-    local ok, _ = pcall(function() st.turnTo(geo.dn) end)
-    assertSame(false, ok)
+    assertThrows(st.turnTo, geo.up)
+    assertThrows(st.turnTo, geo.dn)
   end)
 end)
 
@@ -181,36 +170,28 @@ describe('safeturtle.inspectDir', function()
     turtle = mock({
       {'inspect', {}, {true, fakeBlocks.stone}},
     })
-    local ok, block = st.inspectDir()
-    assertSame(true, ok)
-    assertSame(fakeBlocks.stone, block)
+    expect({st.inspectDir()}, eql({true, fakeBlocks.stone}))
   end)
 
   it('should work in current direction', function()
     turtle = mock({
       {'inspect', {}, {true, fakeBlocks.stone}},
     })
-    local ok, block = st.inspectDir(geo.east)
-    assertSame(true, ok)
-    assertSame(fakeBlocks.stone, block)
+    expect({st.inspectDir(geo.east)}, eql({true, fakeBlocks.stone}))
   end)
 
   it('should work up', function()
     turtle = mock({
       {'inspectUp', {}, {true, fakeBlocks.stone}},
     })
-    local ok, block = st.inspectDir(geo.up)
-    assertSame(true, ok)
-    assertSame(fakeBlocks.stone, block)
+    expect({st.inspectDir(geo.up)}, eql({true, fakeBlocks.stone}))
   end)
 
   it('should work down', function()
     turtle = mock({
       {'inspectDown', {}, {true, fakeBlocks.stone}},
     })
-    local ok, block = st.inspectDir(geo.dn)
-    assertSame(true, ok)
-    assertSame(fakeBlocks.stone, block)
+    expect({st.inspectDir(geo.dn)}, eql({true, fakeBlocks.stone}))
   end)
 
   it('should work to left', function()
@@ -219,9 +200,7 @@ describe('safeturtle.inspectDir', function()
       {'inspect', {}, {true, fakeBlocks.deepslate}},
       {'turnRight', {}, {true}},
     })
-    local ok, block = st.inspectDir(geo.north)
-    assertSame(true, ok)
-    assertSame(fakeBlocks.deepslate, block)
+    expect({st.inspectDir(geo.north)}, eql({true, fakeBlocks.deepslate}))
   end)
 
   it('should work to right', function()
@@ -230,9 +209,7 @@ describe('safeturtle.inspectDir', function()
       {'inspect', {}, {true, fakeBlocks.deepslate}},
       {'turnLeft', {}, {true}},
     })
-    local ok, block = st.inspectDir(geo.south)
-    assertSame(true, ok)
-    assertSame(fakeBlocks.deepslate, block)
+    expect({st.inspectDir(geo.south)}, eql({true, fakeBlocks.deepslate}))
   end)
 
   it('should work to rear', function()
@@ -243,18 +220,14 @@ describe('safeturtle.inspectDir', function()
       {'turnLeft', {}, {true}},
       {'turnLeft', {}, {true}},
     })
-    local ok, block = st.inspectDir(geo.west)
-    assertSame(true, ok)
-    assertSame(fakeBlocks.deepslate, block)
+    expect({st.inspectDir(geo.west)}, eql({true, fakeBlocks.deepslate}))
   end)
 
   it('should propagate a false return', function()
     turtle = mock({
       {'inspect', {}, {false, nil}},
     })
-    local ok, block = st.inspectDir()
-    assertSame(false, ok)
-    assertSame(nil, block)
+    expect({st.inspectDir()}, eql({false, nil}))
   end)
 
   -- TODO: What if the turn errors?  We don't currently handle it at all.
@@ -322,9 +295,7 @@ describe('safeturtle.placeDir', function()
     turtle = mock({
       {'place', {}, {false, 'xyz'}},
     })
-    local ok, reason = st.placeDir()
-    assertSame(false, ok)
-    assertSame('xyz', reason)
+    expect({st.placeDir()}, eql({false, 'xyz'}))
   end)
 
   -- TODO: What if the turn errors?  We don't currently handle it at all.
@@ -392,9 +363,7 @@ describe('safeturtle.unsafeDigDir', function()
     turtle = mock({
       {'dig', {}, {false, 'xyz'}},
     })
-    local ok, reason = st.unsafeDigDir()
-    assertSame(false, ok)
-    assertSame('xyz', reason)
+    expect({st.unsafeDigDir()}, eql({false, 'xyz'}))
   end)
 
   -- TODO: What if the turn errors?  We don't currently handle it at all.
@@ -405,8 +374,6 @@ describe('safeturtle.dig', function()
     turtle = mock({
       {'inspect', {}, {false}},
     })
-    local ok, reason = st.dig()
-    assertSame(false, ok)
-    assertSame('No block', reason)
+    expect({st.dig()}, eql({false, 'No block'}))
   end)
 end)

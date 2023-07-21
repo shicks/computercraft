@@ -32,7 +32,9 @@ function dump(obj)
   return s .. '}'
 end
 
+-- NOTE: `right` can include matchers.
 function eq(left, right)
+  if isMatcher(right) then return right.matches(left) end
   local t = type(left)
   if t ~= type(right) then return false end
   if t == 'table' then
@@ -48,6 +50,12 @@ function eq(left, right)
   else
     return left == right
   end
+end
+
+function assertThrows(fn, ...)
+  local ok, caught = pcall(fn, ...)
+  expect(ok, is(false))
+  return caught  
 end
 
 -- TODO - delete me
@@ -108,6 +116,42 @@ function expect(subject, matcher)
   if matcher.matches(subject) then return end
   error('Expected ' .. dump(subject) .. ' to ' .. matcher.describe(), 2)
 end
+
+
+
+
+function mock(expected)
+  -- 'expected' is a table:
+  -- {
+  --   {'foo', {arg1, arg2}, {}},
+  --   {'bar', {arg}, {ret1, ret2}},
+  -- }
+  -- NOTE: this is very brittle, but it's the easiest thing
+  -- TODO - what about coupled mocks that go in order?
+
+  local i = 1
+  function index(_, key)
+    if key == 'verify' then
+      return function()
+        if i < #expected then error('Missing expected calls') end
+      end
+    end
+    return function(...)
+      local row = expected[i]
+      if row == nil then error('Unexpected call to ' .. key) end
+      i = i + 1
+      if row[1] ~= key then error('Expected call to ' .. row[1] .. ' but got ' .. key) end
+      local args = {...}
+      wantargs = row[2]
+      if not eq(args, wantargs) then error('Unexpected args to ' .. key .. ': expected ' .. dump(wantargs) .. ', but got ' .. dump(args)) end
+      return unpack(row[3])
+    end
+  end
+  return setmetatable({}, {__index = index})
+end
+
+
+
 
 local function testSummary()
   local s = ''
