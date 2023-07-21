@@ -20,13 +20,16 @@ local fakeBlocks = {
 
 beforeEach(function()
   st.reset(geo.P(), geo.east)
+  mc = mocks()
+  turtle = mc.mock('turtle')
+  _turtle = mc.expect(turtle)
 end)
 
 afterEach(function()
-  if turtle then
-    turtle.verify()
-    turtle = nil
-  end
+  mc.verify()
+  turtle = nil
+  _turtle = nil
+  mc = nil
 end)
 
 describe('test harness', function()
@@ -40,13 +43,13 @@ end)
 
 describe('safeturtle.turnLeft', function()
   it('should update direction', function()
-    turtle = mock({{'turnLeft', {}, {true}}})
+    _turtle.turnLeft().ret(true)
     assert(st.turnLeft())
     expect(dir, is(geo.north))
   end)
 
   it('should propagate errors', function()
-    turtle = mock({{'turnLeft', {}, {false, 'xyz'}}})
+    _turtle.turnLeft().ret(false, 'xyz')
     expect({st.turnLeft()}, eql({false, 'xyz'}))
     expect(dir, is(geo.east))
   end)
@@ -54,13 +57,13 @@ end)
 
 describe('safeturtle.turnRight', function()
   it('should update direction', function()
-    turtle = mock({{'turnRight', {}, {true}}})
+    _turtle.turnRight().ret(true)
     assert(st.turnRight())
     expect(dir, is(geo.south))
   end)
 
   it('should propagate errors', function()
-    turtle = mock({{'turnRight', {}, {false, 'xyz'}}})
+    _turtle.turnRight().ret(false, 'xyz')
     expect({st.turnRight()}, eql({false, 'xyz'}))
     expect(dir, is(geo.east))
   end)
@@ -68,25 +71,21 @@ end)
 
 describe('safeturtle.turnAbout', function()
   it('should update direction', function()
-    turtle = mock({
-        {'turnLeft', {}, {true}},
-        {'turnLeft', {}, {true}},
-    })
+    _turtle.turnLeft().ret(true)
+    _turtle.turnLeft().ret(true)
     assert(st.turnAbout())
     expect(dir, is(geo.west))
   end)
 
   it('should propagate errors from the first call', function()
-    turtle = mock({{'turnLeft', {}, {false, 'abc'}}})
+    _turtle.turnLeft().ret(false, 'abc')
     expect({st.turnAbout()}, eql({false, 'abc'}))
     expect(dir, is(geo.east))
   end)
 
   it('should propagate errors from the second call', function()
-    turtle = mock({
-        {'turnLeft', {}, {true}},
-        {'turnLeft', {}, {false, 'abc'},
-    }})
+    _turtle.turnLeft().ret(true)
+    _turtle.turnLeft().ret(false, 'abc')
     expect({st.turnAbout()}, eql({false, 'abc'}))
     expect(dir, is(geo.north))
   end)
@@ -94,70 +93,56 @@ end)
 
 describe('safeturtle.turnTo', function()
   it('should not turn if already facing', function()
-    turtle = mock({})
     st.reset(P(), geo.east)
     assert(st.turnTo(geo.east))
     expect(dir, is(geo.east))
   end)
 
   it('should turn from east to north', function()
-    turtle = mock({
-        {'turnLeft', {}, {true}},
-    })
+    _turtle.turnLeft().ret(true)
     st.reset(P(), geo.east)
     assert(st.turnTo(geo.north))
     expect(dir, is(geo.north))
   end)
 
   it('should turn from east to west', function()
-    turtle = mock({
-        {'turnLeft', {}, {true}},
-        {'turnLeft', {}, {true}},
-    })
+    _turtle.turnLeft().ret(true)
+    _turtle.turnLeft().ret(true)
     st.reset(P(), geo.east)
     assert(st.turnTo(geo.west))
     expect(dir, is(geo.west))
   end)
 
   it('should turn from east to south', function()
-    turtle = mock({
-        {'turnRight', {}, {true}},
-    })
+    _turtle.turnRight().ret(true)
     st.reset(P(), geo.east)
     assert(st.turnTo(geo.south))
     expect(dir, is(geo.south))
   end)
 
   it('should turn from north to east', function()
-    turtle = mock({
-        {'turnRight', {}, {true}},
-    })
+    _turtle.turnRight().ret(true)
     st.reset(P(), geo.north)
     assert(st.turnTo(geo.east))
     expect(dir, is(geo.east))
   end)
 
   it('should turn from west to east', function()
-    turtle = mock({
-        {'turnLeft', {}, {true}},
-        {'turnLeft', {}, {true}},
-    })
+    _turtle.turnLeft().ret(true)
+    _turtle.turnLeft().ret(true)
     st.reset(P(), geo.west)
     assert(st.turnTo(geo.east))
     expect(dir, is(geo.east))
   end)
 
   it('should turn from south to east', function()
-    turtle = mock({
-        {'turnLeft', {}, {true}},
-    })
+    _turtle.turnLeft().ret(true)
     st.reset(P(), geo.south)
     assert(st.turnTo(geo.east))
     expect(dir, is(geo.east))
   end)
 
   it('should fail to turn to up/down', function()
-    turtle = mock({})
     st.reset(P(), geo.east)
     assertThrows(st.turnTo, geo.up)
     assertThrows(st.turnTo, geo.dn)
@@ -166,66 +151,50 @@ end)
 
 describe('safeturtle.inspectDir', function()
   it('should work with nil', function()
-    turtle = mock({
-      {'inspect', {}, {true, fakeBlocks.stone}},
-    })
+    _turtle.inspect().ret(true, fakeBlocks.stone)
     expect({st.inspectDir()}, eql({true, fakeBlocks.stone}))
   end)
 
   it('should work in current direction', function()
-    turtle = mock({
-      {'inspect', {}, {true, fakeBlocks.stone}},
-    })
+    _turtle.inspect().ret(true, fakeBlocks.stone)
     expect({st.inspectDir(geo.east)}, eql({true, fakeBlocks.stone}))
   end)
 
   it('should work up', function()
-    turtle = mock({
-      {'inspectUp', {}, {true, fakeBlocks.stone}},
-    })
+    _turtle.inspectUp().ret(true, fakeBlocks.stone)
     expect({st.inspectDir(geo.up)}, eql({true, fakeBlocks.stone}))
   end)
 
   it('should work down', function()
-    turtle = mock({
-      {'inspectDown', {}, {true, fakeBlocks.stone}},
-    })
+   _turtle.inspectDown().ret(true, fakeBlocks.stone)
     expect({st.inspectDir(geo.dn)}, eql({true, fakeBlocks.stone}))
   end)
 
   it('should work to left', function()
-    turtle = mock({
-      {'turnLeft', {}, {true}},
-      {'inspect', {}, {true, fakeBlocks.deepslate}},
-      {'turnRight', {}, {true}},
-    })
+    _turtle.turnLeft().ret(true)
+    _turtle.inspect().ret(true, fakeBlocks.deepslate)
+    _turtle.turnRight().ret(true)
     expect({st.inspectDir(geo.north)}, eql({true, fakeBlocks.deepslate}))
   end)
 
   it('should work to right', function()
-    turtle = mock({
-      {'turnRight', {}, {true}},
-      {'inspect', {}, {true, fakeBlocks.deepslate}},
-      {'turnLeft', {}, {true}},
-    })
+    _turtle.turnRight().ret(true)
+    _turtle.inspect().ret(true, fakeBlocks.deepslate)
+    _turtle.turnLeft().ret(true)
     expect({st.inspectDir(geo.south)}, eql({true, fakeBlocks.deepslate}))
   end)
 
   it('should work to rear', function()
-    turtle = mock({
-      {'turnLeft', {}, {true}},
-      {'turnLeft', {}, {true}},
-      {'inspect', {}, {true, fakeBlocks.deepslate}},
-      {'turnLeft', {}, {true}},
-      {'turnLeft', {}, {true}},
-    })
+    _turtle.turnLeft().ret(true)
+    _turtle.turnLeft().ret(true)
+    _turtle.inspect().ret(true, fakeBlocks.deepslate)
+    _turtle.turnLeft().ret(true)
+    _turtle.turnLeft().ret(true)
     expect({st.inspectDir(geo.west)}, eql({true, fakeBlocks.deepslate}))
   end)
 
   it('should propagate a false return', function()
-    turtle = mock({
-      {'inspect', {}, {false, nil}},
-    })
+    _turtle.inspect().ret(false, nil)
     expect({st.inspectDir()}, eql({false, nil}))
   end)
 
@@ -234,66 +203,50 @@ end)
 
 describe('safeturtle.placeDir', function()
   it('should work with nil', function()
-    turtle = mock({
-      {'place', {}, {true}},
-    })
+    _turtle.place().ret(true)
     assert(st.placeDir())
   end)
 
   it('should work in current direction', function()
-    turtle = mock({
-      {'place', {}, {true}},
-    })
+    _turtle.place().ret(true)
     assert(st.placeDir(geo.east))
   end)
 
   it('should work up', function()
-    turtle = mock({
-      {'placeUp', {}, {true}},
-    })
+    _turtle.placeUp().ret(true)
     assert(st.placeDir(geo.up))
   end)
 
   it('should work down', function()
-    turtle = mock({
-      {'placeDown', {}, {true}},
-    })
+    _turtle.placeDown().ret(true)
     assert(st.placeDir(geo.dn))
   end)
 
   it('should work to left', function()
-    turtle = mock({
-      {'turnLeft', {}, {true}},
-      {'place', {}, {true}},
-      {'turnRight', {}, {true}},
-    })
+    _turtle.turnLeft().ret(true)
+    _turtle.place().ret(true)
+    _turtle.turnRight().ret(true)
     assert(st.placeDir(geo.north))
   end)
 
   it('should work to right', function()
-    turtle = mock({
-      {'turnRight', {}, {true}},
-      {'place', {}, {true}},
-      {'turnLeft', {}, {true}},
-    })
+    _turtle.turnRight().ret(true)
+    _turtle.place().ret(true)
+    _turtle.turnLeft().ret(true)
     assert(st.placeDir(geo.south))
   end)
 
   it('should work to rear', function()
-    turtle = mock({
-      {'turnLeft', {}, {true}},
-      {'turnLeft', {}, {true}},
-      {'place', {}, {true}},
-      {'turnLeft', {}, {true}},
-      {'turnLeft', {}, {true}},
-    })
+    _turtle.turnLeft().ret(true)
+    _turtle.turnLeft().ret(true)
+    _turtle.place().ret(true)
+    _turtle.turnLeft().ret(true)
+    _turtle.turnLeft().ret(true)
     assert(st.placeDir(geo.west))
   end)
 
   it('should propagate a false return', function()
-    turtle = mock({
-      {'place', {}, {false, 'xyz'}},
-    })
+    _turtle.place().ret(false, 'xyz')
     expect({st.placeDir()}, eql({false, 'xyz'}))
   end)
 
@@ -302,66 +255,50 @@ end)
 
 describe('safeturtle.unsafeDigDir', function()
   it('should work with nil', function()
-    turtle = mock({
-      {'dig', {}, {true}},
-    })
+    _turtle.dig().ret(true)
     assert(st.unsafeDigDir())
   end)
 
   it('should work in current direction', function()
-    turtle = mock({
-      {'dig', {}, {true}},
-    })
+    _turtle.dig().ret(true)
     assert(st.unsafeDigDir(geo.east))
   end)
 
   it('should work up', function()
-    turtle = mock({
-      {'digUp', {}, {true}},
-    })
+    _turtle.digUp().ret(true)
     assert(st.unsafeDigDir(geo.up))
   end)
 
   it('should work down', function()
-    turtle = mock({
-      {'digDown', {}, {true}},
-    })
+    _turtle.digDown().ret(true)
     assert(st.unsafeDigDir(geo.dn))
   end)
 
   it('should work to left', function()
-    turtle = mock({
-      {'turnLeft', {}, {true}},
-      {'dig', {}, {true}},
-      {'turnRight', {}, {true}},
-    })
+    _turtle.turnLeft().ret(true)
+    _turtle.dig().ret(true)
+    _turtle.turnRight().ret(true)
     assert(st.unsafeDigDir(geo.north))
   end)
 
   it('should work to right', function()
-    turtle = mock({
-      {'turnRight', {}, {true}},
-      {'dig', {}, {true}},
-      {'turnLeft', {}, {true}},
-    })
+    _turtle.turnRight().ret(true)
+    _turtle.dig().ret(true)
+    _turtle.turnLeft().ret(true)
     assert(st.unsafeDigDir(geo.south))
   end)
 
   it('should work to rear', function()
-    turtle = mock({
-      {'turnLeft', {}, {true}},
-      {'turnLeft', {}, {true}},
-      {'dig', {}, {true}},
-      {'turnLeft', {}, {true}},
-      {'turnLeft', {}, {true}},
-    })
+    _turtle.turnLeft().ret(true)
+    _turtle.turnLeft().ret(true)
+    _turtle.dig().ret(true)
+    _turtle.turnLeft().ret(true)
+    _turtle.turnLeft().ret(true)
     assert(st.unsafeDigDir(geo.west))
   end)
 
   it('should propagate a false return', function()
-    turtle = mock({
-      {'dig', {}, {false, 'xyz'}},
-    })
+    _turtle.dig().ret(false, 'xyz')
     expect({st.unsafeDigDir()}, eql({false, 'xyz'}))
   end)
 
@@ -370,9 +307,7 @@ end)
 
 describe('safeturtle.dig', function()
   it('should fail when nothing in front', function()
-    turtle = mock({
-      {'inspect', {}, {false}},
-    })
+    _turtle.inspect().ret(false)
     expect({st.dig()}, eql({false, 'No block'}))
   end)
 end)

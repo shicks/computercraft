@@ -33,14 +33,14 @@ function dump(obj)
 end
 
 -- NOTE: `right` can include matchers.
-function eq(left, right)
+local function matches(left, right)
   if isMatcher(right) then return right.matches(left) end
   local t = type(left)
   if t ~= type(right) then return false end
   if t == 'table' then
     local seen = {}
     for k, v in pairs(left) do
-      if not eq(v, right[k]) then return false end
+      if not matches(v, right[k]) then return false end
       seen[k] = true
     end
     for k, v in pairs(right) do
@@ -90,7 +90,7 @@ function is(expected)
 end
 function eql(expected)
   return matcher(
-      function(subject) return eq(subject, expected) end,
+      function(subject) return matches(subject, expected) end,
       function() return 'deep-equal ' .. dump(expected) end)
 end
 
@@ -129,41 +129,71 @@ end
 
 
 -- Returns a "mocks" controller
+-- Usage: local mc = mocks()
+--        obj = mc.mock('obj')
+--        mc.expect(obj).method(args).ret(returns)
+--        mc.verify()
+-- TODO - consider mc.when() for loose mocks?
 function mocks()
-
-end
-
-
-function mock(expected)
-  -- 'expected' is a table:
-  -- {
-  --   {'foo', {arg1, arg2}, {}},
-  --   {'bar', {arg}, {ret1, ret2}},
-  -- }
-  -- NOTE: this is very brittle, but it's the easiest thing
-  -- TODO - what about coupled mocks that go in order?
-
-  local i = 1
-  function index(_, key)
-    if key == 'verify' then
-      return function()
-        if i < #expected then error('Missing expected calls') end
-      end
+  local expectations = {}
+  local mt = {}
+  local callNum = 1
+  local names = {}
+  local function getName(obj)
+    for _, entry in pairs(names) do
+      if entry[1] == obj then return entry[2] end
     end
+    return 'mock'
+  end
+  function mt.__index(obj, key)
     return function(...)
-      local row = expected[i]
-      if row == nil then error('Unexpected call to ' .. key) end
-      i = i + 1
-      if row[1] ~= key then error('Expected call to ' .. row[1] .. ' but got ' .. key) end
+      local row = expectations[callNum]
+      callNum = callNum + 1
+      if row == nil then
+        error('Unexpected call to ' .. getName(obj) .. '.' .. key, 2)
+      elseif obj ~= row[1] or key ~= row[2] then
+        error('Expected call to ' .. getName(row[1]) .. '.' .. row[2]
+              .. ' but got ' .. getName(obj) .. '.' .. key, 2)
+      end
       local args = {...}
-      wantargs = row[2]
-      if not eq(args, wantargs) then error('Unexpected args to ' .. key .. ': expected ' .. dump(wantargs) .. ', but got ' .. dump(args)) end
-      return unpack(row[3])
+      wantargs = row[3]
+      if not wantargs.matches(args) then
+        error('Unexpected args to ' .. getName(obj) .. '.' .. key
+              .. ': expected ' .. wantargs.describe() .. ', but got '
+              .. dump(args), 2)
+      end
+      return row[4]()
     end
   end
-  return setmetatable({}, {__index = index})
+  local function mock(name)
+    local mock = setmetatable({}, mt)
+    names[#names + 1] = mock
+    return mock
+  end
+  local function expect(mock)
+    if getmetatable(mock) ~= mt then error('Incompatible mock', 2) end
+    local emt = {}
+    function emt.__index(_, key)
+      return function(...)
+        local entry = {mock, key, eql({...})}
+        expectations[#expectations + 1] = entry
+        local function ret(...)
+          local args = {...}
+          entry[4] = function() return unpack(args) end
+        end
+        local function err(cause)
+          entry[4] = function() error(cause) end
+        end
+        return {ret = ret, err = err}
+      end
+    end
+    return setmetatable({}, emt)
+  end
+  local function verify()
+    if callNum < #expectations then error('Missing expected calls', 2) end
+  end
+  return {mock = mock, expect = expect, verify = verify}
 end
-
 
 
 
@@ -210,7 +240,7 @@ function describe(ctx, fn)
   tearDowns[#tearDowns + 1] = {}
   local ok, err = pcall(fn)
   if not ok then
-    print('Error: ' .. err)
+    print('Error: ' .. tostring(err))
     print(indent .. '\x1b[31mFAIL\x1b[m')
     failed = true
   end
@@ -247,7 +277,7 @@ function it(name, fn)
       local ok2, err2 = pcall(a)
       if not ok2 then
         ok = false
-        print('Error in afterEach: ' .. err)
+        print('Error in afterEach: ' .. tostring(err))
         hasErr = true
       end
     end
