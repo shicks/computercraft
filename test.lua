@@ -13,6 +13,13 @@ local tearDowns = {{}}
 local passCount = 0
 local failCount = 0
 
+local BOLD = '\x1b[1m'
+local RED = '\x1b[31m'
+local GREEN = '\x1b[32m'
+local RESET = '\x1b[m'
+local PASS = '\xe2\x9c\x94 '
+local FAIL = '\xe2\x9c\x98 '
+
 function dump(obj)
   if type(obj) ~= 'table' then return tostring(obj) end
   local mt = getmetatable(obj)
@@ -200,11 +207,11 @@ end
 local function testSummary()
   local s = ''
   if passCount > 0 then
-    s = s .. '\x1b[32m' .. passCount .. ' tests passed\x1b[m'
+    s = s .. GREEN .. passCount .. ' tests passed' .. RESET
   end
   if failCount > 0 then
     if s ~= '' then s = s .. ', ' end
-    s = s .. '\x1b[31m' .. failCount .. ' tests failed\x1b[m'
+    s = s .. RED .. failCount .. ' tests failed' .. RESET
     failed = true
   end
   if passCount + failCount == 0 then
@@ -233,7 +240,7 @@ function tearDown(fn)
 end
 
 function describe(ctx, fn)
-  print(indent .. '\x1b[1m' .. ctx .. '\x1b[m ...\n')
+  print(indent .. BOLD .. ctx .. RESET .. ' ...\n')
   indent = indent .. '  '
   befores[#befores + 1] = {}
   afters[#afters + 1] = {}
@@ -241,7 +248,7 @@ function describe(ctx, fn)
   local ok, err = pcall(fn)
   if not ok then
     print('Error: ' .. tostring(err))
-    print(indent .. '\x1b[31mFAIL\x1b[m')
+    print(indent .. RED .. 'FAIL' .. RESET)
     failed = true
   end
   indent = indent:sub(3)
@@ -283,13 +290,13 @@ function it(name, fn)
     end
   end
   if ok and not hasErr then
-    print(indent .. '\x1b[32m\xe2\x9c\x94 ' .. name .. '\x1b[m')
+    print(indent .. GREEN .. PASS .. name .. RESET)
     passCount = passCount + 1
   else
     if not err and not hasErr then
       print('Error: no error specified')
     end
-    print(indent .. '\x1b[31m\xe2\x9c\x98 ' .. name .. '\x1b[m')
+    print(indent .. RED .. FAIL .. name .. RESET)
     failed = true
     failCount = failCount + 1
   end
