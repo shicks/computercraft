@@ -1,15 +1,14 @@
-local stub = require('stub')()
-
 local geo = require('geo')
 local pos = geo.P()
 local dir = geo.east
 
 -- stub out the load/write functions
-stub.replace(geo, 'loadPos', function() return pos end)
-stub.replace(geo, 'loadDir', function() return dir end)
-stub.replace(geo, 'writePos', function(p) pos = p end)
-stub.replace(geo, 'writeDir', function(d) dir = d end)
-tearDown(stub.reset)
+local stubs = replacer()
+stubs.replace(geo, 'loadPos', function() return pos end)
+stubs.replace(geo, 'loadDir', function() return dir end)
+stubs.replace(geo, 'writePos', function(p) pos = p end)
+stubs.replace(geo, 'writeDir', function(d) dir = d end)
+tearDown(stubs.reset)
 
 local st = require('safeturtle')
 local P = geo.P

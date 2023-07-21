@@ -118,6 +118,33 @@ function expect(subject, matcher)
 end
 
 
+-- Returns a "replacer" controller
+-- Usage: local stubs = replacer()
+--        stubs.replace(owner, 'prop', value)
+--        tearDown(stubs.reset)
+function replacer()
+  local stubs = {}
+
+  local function replace(owner, prop, replacement)
+    stubs[#stubs + 1] = {owner, prop, owner[prop]}
+    owner[prop] = replacement
+  end
+
+  local function reset()
+    for _, r in pairs(stubs) do
+      r[1][r[2]] = r[3]
+    end
+    stubs = {}
+  end
+
+  return {replace = replace, reset = reset}
+end
+
+
+-- Returns a "mocks" controller
+function mocks()
+
+end
 
 
 function mock(expected)
