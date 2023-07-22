@@ -136,58 +136,56 @@ end
 -- TODO - consider mc.when() for loose mocks?
 function mocks()
   local expectations = {}
-  local mt = {}
   local callNum = 1
-  local names = {}
-  local function getName(obj)
-    for _, entry in pairs(names) do
-      if entry[1] == obj then return entry[2] end
-    end
-    return 'mock'
-  end
-  function mt.__index(obj, key)
-    return function(...)
-      local row = expectations[callNum]
-      callNum = callNum + 1
-      if row == nil then
-        error('Unexpected call to ' .. getName(obj) .. '.' .. key, 2)
-      elseif obj ~= row[1] or key ~= row[2] then
-        error('Expected call to ' .. getName(row[1]) .. '.' .. row[2]
-              .. ' but got ' .. getName(obj) .. '.' .. key, 2)
-      end
-      local args = {...}
-      wantargs = row[3]
-      if not wantargs.matches(args) then
-        error('Unexpected args to ' .. getName(obj) .. '.' .. key
-              .. ': expected ' .. wantargs.describe() .. ', but got '
-              .. dump(args), 2)
-      end
-      return row[4]()
-    end
-  end
   local function mock(name)
-    local mock = setmetatable({}, mt)
-    names[#names + 1] = mock
-    return mock
+    local m
+    m = setmetatable({}, {
+      expect = setmetatable({}, {
+        __call = function(_, ...)
+          local entry = {m, eql({...}), function() end}
+          expectations[#expectations + 1] = entry
+          local function ret(...)
+            local args = {...}
+            entry[3] = function() return unpack(args) end
+          end
+          local function err(cause)
+            entry[3] = function() error(cause) end
+          end
+          return {ret = ret, err = err}
+        end,
+        __index = function(_, key)
+          return getmetatable(m[key]).expect
+        end,
+      }),
+      __tostring = function() return name end,
+      __call = function(_, ...)
+        local row = expectations[callNum]
+        callNum = callNum + 1
+        if row == nil then
+          error('Unexpected call to ' .. name, 2)
+        elseif m ~= row[1] then
+          error('Expected call to ' .. tostring(row[1])
+                .. ' but got ' .. name, 2)
+        end
+        local args = {...}
+        wantargs = row[2]
+        if not wantargs.matches(args) then
+          error('Unexpected args to ' .. name .. ': expected '
+                .. wantargs.describe() .. ', but got '
+                .. dump(args), 2)
+        end
+        return row[3]()
+      end,
+      __index = function(_, key)
+        local fn = mock(name .. '.' .. key)
+        rawset(m, key, fn)
+        return fn
+      end,
+    })
+    return m
   end
-  local function expect(mock)
-    if getmetatable(mock) ~= mt then error('Incompatible mock', 2) end
-    local emt = {}
-    function emt.__index(_, key)
-      return function(...)
-        local entry = {mock, key, eql({...})}
-        expectations[#expectations + 1] = entry
-        local function ret(...)
-          local args = {...}
-          entry[4] = function() return unpack(args) end
-        end
-        local function err(cause)
-          entry[4] = function() error(cause) end
-        end
-        return {ret = ret, err = err}
-      end
-    end
-    return setmetatable({}, emt)
+  local function expect(obj)
+    return getmetatable(obj).expect
   end
   local function verify()
     if callNum < #expectations then error('Missing expected calls', 2) end

@@ -3,24 +3,29 @@ local pos = geo.P()
 local dir = geo.east
 
 -- stub out the load/write functions
+local globalStubs = replacer()
+globalStubs.replace(geo, 'loadPos', function() return pos end)
+globalStubs.replace(geo, 'loadDir', function() return dir end)
+globalStubs.replace(geo, 'writePos', function(p) pos = p end)
+globalStubs.replace(geo, 'writeDir', function(d) dir = d end)
+tearDown(globalStubs.reset)
+
 local stubs = replacer()
-stubs.replace(geo, 'loadPos', function() return pos end)
-stubs.replace(geo, 'loadDir', function() return dir end)
-stubs.replace(geo, 'writePos', function(p) pos = p end)
-stubs.replace(geo, 'writeDir', function(d) dir = d end)
-tearDown(stubs.reset)
 
 local st = require('safeturtle')
 local P = geo.P
 
 local fakeBlocks = {
-  stone = {name = 'minecraft:stone'},
+  chest = {name = 'minecraft:chest'},
   deepslate = {name = 'minecraft:deepslate'},
+  sand = {name = 'minecraft:sand'},
+  stone = {name = 'minecraft:stone'},
 }
 
 beforeEach(function()
   st.reset(geo.P(), geo.east)
   mc = mocks()
+  stubs.replace(os, 'sleep', mc.mock('os.sleep'))
   turtle = mc.mock('turtle')
   _turtle = mc.expect(turtle)
 end)
@@ -30,6 +35,7 @@ afterEach(function()
   turtle = nil
   _turtle = nil
   mc = nil
+  stubs.reset()
 end)
 
 describe('test harness', function()
@@ -310,4 +316,20 @@ describe('safeturtle.dig', function()
     _turtle.inspect().ret(false)
     expect({st.dig()}, eql({false, 'No block'}))
   end)
+
+  it('should refuse to dig a chest', function()
+    _turtle.inspect().ret(true, fakeBlocks.chest)
+    expect({st.dig()}, eql({false, 'Refusing to mine minecraft:chest'}))
+  end)
+
+  it('should redig again after digging a falling block', function()
+    _turtle.inspect().ret(true, fakeBlocks.sand)
+    _turtle.dig().ret(true)
+    mc.expect(os.sleep)(1)
+    _turtle.inspect().ret(true, fakeBlocks.stone)
+    _turtle.dig().ret(true)
+    -- done setting up mocks: dig should succeed
+    assert(st.dig())
+  end)
+
 end)
