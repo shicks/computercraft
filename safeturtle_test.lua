@@ -322,7 +322,7 @@ describe('safeturtle.dig', function()
     expect({st.dig()}, eql({false, 'Refusing to mine minecraft:chest'}))
   end)
 
-  it('should redig again after digging a falling block', function()
+  it('should dig again after digging a falling block', function()
     _turtle.inspect().ret(true, fakeBlocks.sand)
     _turtle.dig().ret(true)
     mc.expect(os.sleep)(1)
@@ -332,4 +332,58 @@ describe('safeturtle.dig', function()
     assert(st.dig())
   end)
 
+  it('should dig when clear', function()
+    _turtle.inspect().ret(true, fakeBlocks.stone)
+    _turtle.dig().ret(true)
+    -- done setting up mocks: dig should succeed
+    assert(st.dig())
+  end)
+end)
+
+describe('safeturtle.digDown', function()
+  it('should fail when nothing below', function()
+    _turtle.inspectDown().ret(false)
+    expect({st.digDown()}, eql({false, 'No block'}))
+  end)
+
+  it('should refuse to dig a chest', function()
+    _turtle.inspectDown().ret(true, fakeBlocks.chest)
+    expect({st.digDown()}, eql({false, 'Refusing to mine minecraft:chest'}))
+  end)
+
+  it('should dig when clear', function()
+    _turtle.inspectDown().ret(true, fakeBlocks.stone)
+    _turtle.digDown().ret(true)
+    -- done setting up mocks: dig should succeed
+    assert(st.digDown())
+  end)
+end)
+
+describe('safeturtle.digUp', function()
+  it('should fail when nothing above', function()
+    _turtle.inspectUp().ret(false)
+    expect({st.digUp()}, eql({false, 'No block'}))
+  end)
+
+  it('should refuse to dig a chest', function()
+    _turtle.inspectUp().ret(true, fakeBlocks.chest)
+    expect({st.digUp()}, eql({false, 'Refusing to mine minecraft:chest'}))
+  end)
+
+  it('should dig again after digging a falling block', function()
+    _turtle.inspectUp().ret(true, fakeBlocks.sand)
+    _turtle.digUp().ret(true)
+    mc.expect(os.sleep)(1)
+    _turtle.inspectUp().ret(true, fakeBlocks.stone)
+    _turtle.digUp().ret(true)
+    -- done setting up mocks: dig should succeed
+    assert(st.digUp())
+  end)
+
+  it('should dig when clear', function()
+    _turtle.inspectUp().ret(true, fakeBlocks.stone)
+    _turtle.digUp().ret(true)
+    -- done setting up mocks: dig should succeed
+    assert(st.digUp())
+  end)
 end)

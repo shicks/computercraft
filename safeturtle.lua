@@ -145,7 +145,7 @@ function st.digDown()
     return false, 'Refusing to mine ' .. info.name
   end
 
-  return turtle.dig()
+  return turtle.digDown()
 end
 
 
@@ -162,13 +162,13 @@ function st.digUp()
   -- Check for blocks with gravity and dig repeatedly
   if blocks.hasGravity(info) then
     -- Dig until the gravel is cleared
-    local ok, reason = turtle.dig()
+    local ok, reason = turtle.digUp()
     if not ok then return false, reason end
     os.sleep(1)
-    return dig()
+    return _.digUp()
   end
 
-  return turtle.dig()
+  return turtle.digUp()
 end
 
 
